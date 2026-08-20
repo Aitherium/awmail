@@ -395,7 +395,33 @@ def test_from_env_reports_every_missing_piece_at_once(monkeypatch):
         monkeypatch.delenv(var, raising=False)
     with pytest.raises(MailError) as exc:
         Mailer.from_env()
-    assert "AWMAIL_FROM" in str(exc.value)
+    message = str(exc.value)
+    assert "AWMAIL_FROM" in message
+    assert "AWMAIL_PASSWORD" in message
+    # Named at CONSTRUCTION, not deferred to the first send: a Mailer that
+    # builds fine and then refuses everything reads as a broken library rather
+    # than a missing setting.
+    assert "AWMAIL_ALLOW" in message
+
+
+def test_from_env_refuses_an_allowlist_that_was_never_set(monkeypatch):
+    from awmail import MailError
+
+    monkeypatch.setenv("AWMAIL_FROM", "me@example.com")
+    monkeypatch.setenv("AWMAIL_PASSWORD", "pw")
+    monkeypatch.delenv("AWMAIL_ALLOW", raising=False)
+    with pytest.raises(MailError, match="AWMAIL_ALLOW"):
+        Mailer.from_env()
+
+
+def test_from_env_builds_when_everything_is_set(monkeypatch):
+    """The check is not simply inert."""
+    monkeypatch.setenv("AWMAIL_FROM", "me@example.com")
+    monkeypatch.setenv("AWMAIL_PASSWORD", "pw")
+    monkeypatch.setenv("AWMAIL_ALLOW", "*@example.com")
+    monkeypatch.setenv("AWMAIL_TRANSPORT", "bridge")
+    mailer = Mailer.from_env()
+    assert mailer.guard.allow == ["*@example.com"]
 
 
 # --------------------------------------------------------------------------

@@ -121,8 +121,14 @@ class Mailer:
         password = os.environ.get("AWMAIL_PASSWORD") or ""
         username = (os.environ.get("AWMAIL_USER") or sender).strip()
         allow = _env_list("AWMAIL_ALLOW")
+        # AWMAIL_ALLOW is required HERE, not deferred to the first send. The
+        # docstring above called it required and the code did not enforce it,
+        # which is the same declared-here-not-real-there shape this package
+        # exists to avoid -- and a Mailer that constructs fine and refuses
+        # every send looks like a broken library rather than a missing setting.
         missing = [n for n, v in (("AWMAIL_FROM", sender),
-                                  ("AWMAIL_PASSWORD", password)) if not v]
+                                  ("AWMAIL_PASSWORD", password),
+                                  ("AWMAIL_ALLOW", allow)) if not v]
         if missing:
             raise MailError("awmail is not configured: " + ", ".join(missing)
                             + " is unset. Run `awmail doctor` to see the whole list.")
