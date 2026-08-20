@@ -396,3 +396,149 @@ def test_from_env_reports_every_missing_piece_at_once(monkeypatch):
     with pytest.raises(MailError) as exc:
         Mailer.from_env()
     assert "AWMAIL_FROM" in str(exc.value)
+
+
+# --------------------------------------------------------------------------
+# a real IMAP conversation
+# --------------------------------------------------------------------------
+
+class TinyIMAP(threading.Thread):
+    """Enough of IMAP4rev1 for a real `imaplib` to log in, select and fetch.
+
+    Receiving is the half that makes an agent answerable rather than write-only,
+    and it is the claim this package leans on hardest -- so it gets the same
+    treatment as the send path rather than a stub. `parse_message` tests prove
+    the parser; only this proves the CONVERSATION.
+    """
+
+    daemon = True
+
+    def __init__(self, messages: list[bytes]):
+        super().__init__()
+        self.messages = messages
+        self.sock = socket.socket()
+        self.sock.bind(("127.0.0.1", 0))
+        self.sock.listen(1)
+        self.port = self.sock.getsockname()[1]
+        self.commands: list[str] = []
+
+    def run(self) -> None:
+        conn, _ = self.sock.accept()
+        conn.settimeout(10)
+        f = conn.makefile("rwb")
+        f.write(b"* OK [CAPABILITY IMAP4rev1] tiny ready\r\n")
+        f.flush()
+        while True:
+            line = f.readline()
+            if not line:
+                break
+            text = line.decode("utf-8", "replace").rstrip("\r\n")
+            self.commands.append(text)
+            tag, _, rest = text.partition(" ")
+            verb = rest.split(" ", 1)[0].upper()
+            if verb == "CAPABILITY":
+                f.write(b"* CAPABILITY IMAP4rev1\r\n")
+                f.write(f"{tag} OK done\r\n".encode())
+            elif verb == "LOGIN":
+                f.write(f"{tag} OK logged in\r\n".encode())
+            elif verb in ("SELECT", "EXAMINE"):
+                f.write(f"* {len(self.messages)} EXISTS\r\n".encode())
+                f.write(b"* OK [UIDVALIDITY 1] ok\r\n")
+                # EXAMINE is the read-only open; SELECT must answer
+                # READ-WRITE or imaplib rejects it as not writable.
+                # Getting that wrong in the double produced a failure
+                # that read exactly like a library bug.
+                mode = "READ-ONLY" if verb == "EXAMINE" else "READ-WRITE"
+                f.write(f"{tag} OK [{mode}] done\r\n".encode())
+            elif verb == "SEARCH":
+                ids = " ".join(str(i + 1) for i in range(len(self.messages)))
+                f.write(f"* SEARCH {ids}\r\n".encode())
+                f.write(f"{tag} OK done\r\n".encode())
+            elif verb == "FETCH":
+                num = int(rest.split(" ")[1])
+                raw = self.messages[num - 1]
+                f.write(f"* {num} FETCH (BODY[] {{{len(raw)}}}\r\n".encode())
+                f.write(raw)
+                f.write(b")\r\n")
+                f.write(f"{tag} OK done\r\n".encode())
+            elif verb == "LOGOUT":
+                f.write(b"* BYE\r\n")
+                f.write(f"{tag} OK done\r\n".encode())
+                f.flush()
+                conn.close()
+                return
+            else:
+                f.write(f"{tag} OK done\r\n".encode())
+            f.flush()
+
+
+def _receiver_against(server: TinyIMAP):
+    from awmail import ImapReceiver
+    return ImapReceiver(host="127.0.0.1", port=server.port, username="me@x.com",
+                        password="pw", security="plain")
+
+
+def test_end_to_end_imap_fetch_reads_real_messages():
+    server = TinyIMAP([
+        b"From: Sam <sam@example.com>\r\nSubject: first\r\n"
+        b"Message-ID: <1@x>\r\n\r\nbody one\r\n",
+        b"From: Kim <kim@example.com>\r\nSubject: second\r\n"
+        b"Message-ID: <2@x>\r\n\r\nbody two\r\n",
+    ])
+    server.start()
+    got = _receiver_against(server).fetch(limit=10)
+    server.join(timeout=10)
+
+    assert len(got) == 2
+    # Newest first.
+    assert [m.subject for m in got] == ["second", "first"]
+    assert got[0].body.strip() == "body two"
+    assert address_of(got[1].sender) == "sam@example.com"
+
+
+def test_end_to_end_imap_does_not_mark_mail_read_by_default():
+    """An agent that clears a human's unread flags has destroyed the only
+    signal that human uses to decide what still needs them."""
+    server = TinyIMAP([b"From: a@b.com\r\nSubject: x\r\n\r\nhi\r\n"])
+    server.start()
+    _receiver_against(server).fetch(limit=1)
+    server.join(timeout=10)
+
+    joined = " ".join(server.commands)
+    assert "EXAMINE" in joined, "a read-only open must use EXAMINE, not SELECT"
+    assert "BODY.PEEK" in joined, "PEEK is what leaves the unread flag alone"
+    assert "RFC822" not in joined
+
+
+def test_end_to_end_imap_mark_seen_is_opt_in_and_really_differs():
+    server = TinyIMAP([b"From: a@b.com\r\nSubject: x\r\n\r\nhi\r\n"])
+    server.start()
+    _receiver_against(server).fetch(limit=1, mark_seen=True)
+    server.join(timeout=10)
+
+    joined = " ".join(server.commands)
+    assert "SELECT" in joined and "EXAMINE" not in joined
+    assert "RFC822" in joined and "BODY.PEEK" not in joined
+
+
+def test_end_to_end_imap_unseen_only_changes_the_search():
+    server = TinyIMAP([b"From: a@b.com\r\nSubject: x\r\n\r\nhi\r\n"])
+    server.start()
+    _receiver_against(server).fetch(limit=1, unseen_only=True)
+    server.join(timeout=10)
+
+    assert any("UNSEEN" in c for c in server.commands)
+
+
+def test_a_dead_imap_server_raises_rather_than_returning_nothing():
+    """An empty inbox and an unreachable server must never look the same."""
+    from awmail import ImapReceiver, MailError
+
+    dead = socket.socket()
+    dead.bind(("127.0.0.1", 0))
+    port = dead.getsockname()[1]
+    dead.close()
+
+    with pytest.raises(MailError, match="cannot read mail"):
+        ImapReceiver(host="127.0.0.1", port=port, username="u", password="p",
+                     security="plain", timeout=3).fetch()
