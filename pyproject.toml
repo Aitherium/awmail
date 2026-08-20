@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "awmail"
+version = "0.1.0"
+description = "Give an agent an email address - send, and actually receive. Two transports, no domain required, and rails so it cannot become a spam cannon."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+# Zero dependencies on purpose: smtplib, imaplib and email are in the standard
+# library, and a mail package that drags in a stack is not adoptable in a minute.
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+awmail = "awmail.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/Aitherium/awmail"
+Documentation = "https://github.com/Aitherium/awmail#readme"
+Repository = "https://github.com/Aitherium/awmail.git"
+Issues = "https://github.com/Aitherium/awmail/issues"
+
+[tool.setuptools]
+packages = ["awmail"]
+license-files = ["LICENSE"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+# The monorepo quality gate runs `ruff --isolated` from the REPO ROOT, where
+# first-party detection cannot see this directory, so it files `awmail` as
+# third-party. Rooted here, ruff would instead detect it as first-party and
+# demand the OPPOSITE import layout - two invocations giving mutually exclusive
+# verdicts on the same file, each `--fix` undoing the other. Empty `src`
+# disables path-based detection so the local run agrees with the gate that
+# actually blocks a merge.
+src = []
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+ignore = ["E501", "E402", "E741"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
