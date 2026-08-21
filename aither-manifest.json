@@ -5,7 +5,7 @@
   "url": "https://aitherium.github.io/awmail/",
   "repository": "https://github.com/Aitherium/awmail",
   "kind": "tool",
-  "status": "no-pages",
+  "status": "public",
   "adopt": "Send one email from an agent using a mailbox you already own, in about a minute.",
   "pairs_with": [
     "awnboard",
