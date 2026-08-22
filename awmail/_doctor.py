@@ -22,8 +22,8 @@ import sys
 #: package cannot read the registry, and a doctor that guessed at the family
 #: would go stale in silence. Regenerate to update.
 SELF = 'awmail'
-FAMILY = ['awbac', 'awbrowse', 'awdit', 'awfind', 'awgit', 'awgraph', 'awiam', 'awkno', 'awm', 'awnboard', 'awnest', 'awnet', 'awprism', 'awreason', 'awrecover', 'awrecurse', 'awrelay', 'awrepl', 'awresearch', 'awrun', 'awseal', 'awshare', 'awtunnel']
-PAIRS_WITH = ['awdit', 'awiam', 'awnboard', 'awnest', 'awrelay', 'awseal', 'awshare']
+FAMILY = ['awbac', 'awbrowse', 'awdit', 'awfind', 'awgit', 'awgraph', 'awiam', 'awkno', 'awm', 'awnboard', 'awnest', 'awnet', 'awnode', 'awprism', 'awreason', 'awrecover', 'awrecurse', 'awrelay', 'awrepl', 'awresearch', 'awrun', 'awseal', 'awshare', 'awtunnel']
+PAIRS_WITH = ['awdit', 'adk', 'awiam', 'awnboard', 'awnest', 'awrelay', 'awseal', 'awshare']
 
 
 def _installed(mod: str) -> "str | None":
