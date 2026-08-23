@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1",
+  "name": "awmail",
+  "description": "Give an agent an email address — send, and actually receive.",
+  "url": "https://aitherium.github.io/awmail/",
+  "repository": "https://github.com/Aitherium/awmail",
+  "kind": "tool",
+  "status": "public",
+  "adopt": "Send one email from an agent using a mailbox you already own, in about a minute.",
+  "pairs_with": [
+    "awnboard",
+    "awnest",
+    "awseal",
+    "awdit",
+    "awiam",
+    "awrelay",
+    "awdk",
+    "awshare"
+  ],
+  "includes": [],
+  "metrics": {
+    "files": {
+      "value": 18,
+      "as_of": "2026-08-22T18:47:19-07:00"
+    },
+    "tests": {
+      "value": 2,
+      "as_of": "2026-08-22T18:47:19-07:00"
+    }
+  }
+}
