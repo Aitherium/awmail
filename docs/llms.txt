@@ -1,0 +1,36 @@
+# awmail
+
+> Give an agent an email address — send, and actually receive.
+
+An agent that cannot send email cannot finish most real errands: it drafts the invitation, the receipt, the reply, and then hands a human a block of text to paste somewhere. The usual fix is a transactional provider, which means a domain, DNS records, a paid account and a warm-up period before the first message — an afternoon of setup to send one email from a mailbox you already own. Receiving is worse: almost nothing gives an agent an inbox, so agents are write-only and cannot close a loop that a person answers by replying.
+
+## Install
+
+```
+pip install awmail
+```
+
+## Use it in 30 seconds
+
+Send one email from an agent using a mailbox you already own, in about a minute.
+
+## Composes with
+
+- [awnboard](https://aitherium.github.io/awnboard/) — A front gate you can put in front of anything, and hand someone the key to.
+- [awnest](https://aitherium.github.io/awnest/) — Prove there is a human before you let them into the nest.
+- [awseal](https://aitherium.github.io/awseal/) — Sign an artifact so a stranger can verify it.
+- [awdit](https://aitherium.github.io/awdit/) — An append-only audit trail whose gaps are DETECTABLE.
+- [awiam](https://aitherium.github.io/awiam/) — Who is this caller? A directory and session store that fails honestly.
+- [awrelay](https://aitherium.github.io/awrelay/) — Portable agent messaging — findings, alerts, coordination.
+- [awdk](https://aitherium.github.io/awdk/) — Build AI agent fleets — 3 lines, any backend, local or cloud.
+- [awshare](https://aitherium.github.io/awshare/) — Publish an artifact and fetch it back verified.
+
+## Where it lives
+
+- Repo: https://github.com/Aitherium/awmail
+- Docs: https://aitherium.github.io/awmail/
+- Manifest (keys + the one-line adoption story): https://aitherium.github.io/awmail/aither-manifest.json
+
+This repository is mirrored from the AitherOS monorepo by `.github/workflows/sync-awmail.yml`; hand edits made here are overwritten on the next sync — change the source instead.
+
+Everything Aitherium, in one file for agents: https://aitherium.com/llms.txt
