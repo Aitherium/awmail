@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "awmail"
-version = "0.1.0"
+version = "0.1.1"
 description = "Give an agent an email address - send, and actually receive. Two transports, no domain required, and rails so it cannot become a spam cannon."
 readme = "README.md"
 requires-python = ">=3.10"
